@@ -24,8 +24,7 @@ type Result struct {
 func main() {
     http.HandleFunc("/", homeHandler)
     http.HandleFunc("/calculate", calculateHandler)
-    fmt.Println("Калькулятор сплит-систем запущен!")
-    fmt.Println("Открой в браузере: http://localhost:8080")
+    fmt.Println("Калькулятор сплит-систем запущен на http://localhost:8080")
     log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -43,11 +42,10 @@ func calculateHandler(w http.ResponseWriter, r *http.Request) {
     height := parseFloatOr(r.FormValue("height"), 2.7)
     sun := r.FormValue("sun") == "yes"
     people := parseInt(r.FormValue("people"))
-    hasEquip := r.FormValue("equipment") == "yes"
-    equipPower := parseFloatOr(r.FormValue("equip_power"), 0)
+    equipPower := parseFloat(r.FormValue("equip_power")) // используем напрямую
     climate := r.FormValue("climate") == "hot"
 
-    // Расчёт (тот же, что в боте)
+    // === РАСЧЁТ ===
     base := 100.0
     if sun {
         base += 30
@@ -61,9 +59,9 @@ func calculateHandler(w http.ResponseWriter, r *http.Request) {
     heat := area*base +
         float64(people)*120 +
         equipPower +
-        area*10
+        area*10 // освещение
 
-    totalKW := math.Round((heat*1.2)/1000*10) / 10 // +20% запас, до 0.1 кВт
+    totalKW := math.Round((heat*1.2)/1000*10) / 10 // +20% запас, округление до 0.1 кВт
 
     var model string
     switch {
@@ -87,7 +85,7 @@ func calculateHandler(w http.ResponseWriter, r *http.Request) {
 Площадь: %.0f м² × %.1f м<br>
 Солнечная сторона: %v<br>
 Людей: %d<br>
-Техника: %.0f Вт<br>
+Тепло от техники: %.0f Вт<br>
 Жаркий климат: %v
     `, area, height, yesNo(sun), people, equipPower, yesNo(climate))
 
@@ -101,8 +99,12 @@ func calculateHandler(w http.ResponseWriter, r *http.Request) {
     tmpl.ExecuteTemplate(w, "result", result)
 }
 
+// ─────── Вспомогательные функции ───────
 func parseFloat(s string) float64 {
     f, _ := strconv.ParseFloat(s, 64)
+    if f <= 0 {
+        return 0
+    }
     return f
 }
 
@@ -115,6 +117,9 @@ func parseFloatOr(s string, def float64) float64 {
 
 func parseInt(s string) int {
     i, _ := strconv.Atoi(s)
+    if i < 0 {
+        return 0
+    }
     return i
 }
 
