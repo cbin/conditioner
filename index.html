@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подбор сплит-системы онлайн</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #f8f9fa; }
+        h1 { color: #1a73e8; text-align: center; }
+        .card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        label { display: block; margin: 16px 0 8px; font-weight: 600; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { margin-top: 24px; width: 100%; padding: 16px; background: #1a73e8; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #1557b0; }
+        .result { margin-top: 30px; padding: 20px; background: #e8f4fd; border-radius: 12px; font-size: 18px; text-align: center; }
+        .big { font-size: 48px; font-weight: bold; color: #1a73e8; margin: 10px 0; }
+        .model { font-size: 28px; color: #d93025; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Подбор кондиционера по помещению</h1>
+        
+        <form hx-post="/calculate" hx-target="#result" hx-swap="innerHTML">
+            <label>Площадь помещения (м²)</label>
+            <input type="number" name="area" required min="5" max="300" placeholder="Например: 35">
+
+            <label>Высота потолков (м)</label>
+            <input type="number" step="0.1" name="height" placeholder="По умолчанию 2.7" value="2.7">
+
+            <label>Окна на солнечную сторону (юг/запад)?</label>
+            <select name="sun">
+                <option value="no">Нет (север, тень)</option>
+                <option value="yes">Да, сильно греется</option>
+            </select>
+
+            <label>Сколько человек постоянно в помещении?</label>
+            <input type="number" name="people" required min="0" max="50" value="2">
+
+            <label>Есть мощная техника (компьютеры, плиты, серверы)?</label>
+            <select name="equipment" onchange="this.form.equip_power.style.display = this.value==='yes'?'block':'none'">
+                <option value="no">Нет</option>
+                <option value="yes">Да</option>
+            </select>
+
+            <div id="equip_power" style="display:none">
+                <label>Суммарная мощность техники (Вт)</label>
+                <input type="number" name="equip_power" placeholder="Например: 1500" value="0">
+            </div>
+
+            <label>Жаркий климат? (Краснодар, Сочи, +40..+45°C летом)</label>
+            <select name="climate">
+                <option value="no">Нет (умеренный)</option>
+                <option value="hot">Да, очень жарко</option>
+            </select>
+
+            <button type="submit">Подобрать кондиционер</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <template id="result-template">
+        <div class="result">
+            <div>Требуемая мощность охлаждения</div>
+            <div class="big">{{.CoolingKW}} кВт</div>
+            <div class="model">{{.Model}}</div>
+            <hr>
+            <div style="text-align:left; font-size:15px; color:#555;">
+                {{{.Details}}}
+            </div>
+            <button onclick="location.reload()" style="margin-top:20px; padding:12px 24px; background:#34a853; border:none; color:white; border-radius:8px;">
+                Новый расчёт
+            </button>
+        </div>
+    </template>
+
+    <script>
+        document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+            if (evt.detail.xhr.responseURL.includes('/calculate')) {
+                document.querySelector('form').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
